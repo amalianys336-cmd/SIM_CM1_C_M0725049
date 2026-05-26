@@ -1,0 +1,369 @@
+---
+title: "Case Method 1 Sistem Informasi Data"
+author: 'Nama: Naysa Amalia_M0725049_C'
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cosmo
+    highlight: tango
+    toc: true
+    toc_float: true
+    number_sections: true
+    self_contained: true
+  pdf_document:
+  
+
+---
+<style>
+
+body {
+  background: #f4fff6;
+  color: #1b4332;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.main-container {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.title-box {
+  background: linear-gradient(135deg, #2e7d32, #66bb6a);
+  padding: 25px;
+  border-radius: 15px;
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.title-box h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: bold;
+    color: white !important;
+}
+
+.title-box p {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+h1:not(.title) {
+  color: #1b5e20;
+  border-bottom: 4px solid #66bb6a;
+  padding-bottom: 10px;
+  margin-top: 45px;
+  font-weight: 700;
+}
+
+h2 {
+  color: #2e7d32;
+  border-left: 6px solid #81c784;
+  padding-left: 12px;
+  margin-top: 35px;
+  font-weight: 700;
+}
+
+h3 {
+  color: #388e3c;
+  font-weight: 600;
+}
+
+p {
+  text-align: justify;
+  color: #2f3e34;
+}
+
+pre {
+  background: #eef8f0;
+  border-left: 6px solid #43a047;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+}
+
+code {
+  background: #dcedc8;
+  color: #1b5e20;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table th {
+  background: linear-gradient(135deg, #43a047, #66bb6a);
+  color: white;
+  padding: 14px;
+  text-align: center;
+}
+
+table td {
+  border: 1px solid #c8e6c9;
+  padding: 12px;
+}
+
+table tr:nth-child(even) {
+  background-color: #f1f8e9;
+}
+
+img {
+  border-radius: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  margin-top: 18px;
+}
+
+a {
+  color: #2e7d32;
+}
+
+a:hover {
+  color: #66bb6a;
+}
+
+</style>
+---
+<div class="title-box">
+
+<h1>Analisis Pendapatan dan Risiko Operasional Rental Film pada Database Sakila</h1>
+
+<p>Visualisasi dan Analisis Statistik Menggunakan R dan Database Sakila</p>
+
+</div>
+
+## Latar Belakang Analisis
+Penelitian ini menggunakan database Sakila untuk menganalisis pola pendapatan dan keterlambatan pengembalian film dalam sistem rental film. Analisis dilakukan untuk mengidentifikasi genre dengan kontribusi pendapatan terbesar, tingkat keterlambatan pengembalian berdasarkan genre, serta hubungan antara tarif sewa dengan rata-rata hari keterlambatan.
+
+Melalui analisis tersebut, diharapkan diperoleh insight mengenai hubungan antara tingginya aktivitas penyewaan dengan risiko operasional keterlambatan pengembalian. Selain itu, analisis ini juga bertujuan untuk mengetahui apakah tarif sewa mampu memengaruhi kedisiplinan pelanggan dalam mengembalikan film tepat waktu atau justru keterlambatan lebih disebabkan oleh kelemahan sistem operasional rental film.
+
+## Tujuan Analisis
+1. Mengetahui genre film dengan pendapatan tertinggi pada database Sakila.
+
+2. Mengetahui tingkat keterlambatan pengembalian film berdasarkan genre.
+
+3. Mengetahui hubungan antara tarif sewa dan rata-rata hari keterlambatan pengembalian film.
+
+## Import Library
+```{r,  message = FALSE}
+library(DBI)
+library(odbc)
+library(ggplot2)
+library(dplyr)
+```
+
+## Koneksi database
+```{r}
+s3 = dbConnect(odbc(),
+               Driver = "MySQL ODBC 8.0 ANSI Driver",
+               Server = "127.0.0.1",
+               UID = "root",
+               PWD = "1234",
+               Port = 3306,
+               database = "sakila")
+```
+
+## Metode Analisis
+Metode yang digunakan dalam laporan ini adalah analisis deskriptif dan analisis korelasi. Analisis deskriptif digunakan untuk melihat total pendapatan dan rasio keterlambatan berdasarkan genre film. Sementara itu, analisis korelasi Pearson digunakan untuk melihat hubungan antara tarif sewa film dengan rata-rata hari keterlambatan pengembalian.
+
+Rasio keterlambatan dihitung menggunakan rumus berikut:
+$$
+Rasio\ Keterlambatan = \frac{Jumlah\ Keterlambatan}{Jumlah\ Penyewaan} \times 100\%
+$$
+
+Keterangan:
+
+- \(Jumlah\ Keterlambatan\) = total transaksi yang terlambat dikembalikan.
+- \(Jumlah\ Penyewaan\) = total seluruh transaksi penyewaan film.
+- \(100\%\) digunakan untuk mengubah hasil menjadi bentuk persentase.
+
+Untuk menguji hubungan antara tarif sewa dan rata-rata hari keterlambatan, digunakan rumus korelasi Pearson sebagai berikut:
+
+$$
+r = \frac{
+\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})
+}{
+\sqrt{
+\sum_{i=1}^{n}(x_i - \bar{x})^2
+\sum_{i=1}^{n}(y_i - \bar{y})^2
+}
+}
+$$
+
+Keterangan:
+
+- \(r\) = koefisien korelasi Pearson
+- \(x_i\) = nilai variabel \(x\) (tarif sewa)
+- \(y_i\) = nilai variabel \(y\) (rata-rata hari keterlambatan)
+- \(\bar{x}\) = rata-rata variabel \(x\)
+- \(\bar{y}\) = rata-rata variabel \(y\)
+- \(n\) = jumlah data pengamatan
+
+Nilai koefisien korelasi Pearson berada pada rentang \(-1\) sampai \(1\). 
+Semakin mendekati \(1\), maka hubungan antar variabel bersifat positif kuat. 
+Semakin mendekati \(-1\), maka hubungan bersifat negatif kuat. 
+Sedangkan nilai yang mendekati \(0\) menunjukkan hubungan yang lemah atau tidak terdapat hubungan linear antar variabel.
+
+## Hasil Analisis dan pembahasan
+### Analisis keuntungan setiap Genre
+• Data keuntungan setiap genre
+```{r}
+data1 = dbGetQuery(s3,"SELECT name as genre, sum(amount)Total_revenue
+from category 
+join film_category using (category_id)
+JOIN inventory using (film_id)
+JOIN rental using (inventory_id)
+JOIN payment using (rental_id)
+GROUP BY genre
+ORDER BY Total_revenue DESC;")
+
+#tampilkan data 
+data1
+
+
+```
+
+• Visualisasi keuntungan setiap Genre
+```{r}
+bar = ggplot(data1, aes(x = reorder(genre, Total_revenue), 
+                        y = Total_revenue,
+                        fill = Total_revenue)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_gradient(low = "lightgreen", high = "darkgreen") +
+  theme_minimal() +
+  labs(title = "Keuntungan Setiap Genre",
+       x = "Genre",
+       y = "Total Revenue") +
+  theme(legend.position = "none")
+
+#tampilkan grafiknya
+bar
+```
+
+Berdasarkan hasil analisis, genre **Sports** memperoleh total pendapatan tertinggi, yaitu sebesar **5314.21**, diikuti oleh **Sci-Fi**, **Animation**, **Drama**, dan **Comedy**. Hal ini menunjukkan bahwa Sports menjadi genre dengan kontribusi pendapatan terbesar dalam database Sakila.
+
+Meskipun demikian, pendapatan yang tinggi belum tentu menunjukkan bahwa genre tersebut bebas dari masalah operasional. Oleh karena itu, analisis selanjutnya dilakukan untuk melihat tingkat keterlambatan pengembalian pada setiap genre.
+
+### Analisis keterlambatan pengembalian kaset berdasarkan genre
+•  Data keterlambatan pengembalian kaset berdasarkan genre
+```{r}
+data2 = dbGetQuery(s3,"SELECT name as genre, 
+COUNT(rental_id) as Total_rental,
+SUM(DATEDIFF(return_date, rental_date) > rental_duration) as Total_telat
+FROM category 
+JOIN film_category using (category_id)
+JOIN film using (film_id)
+JOIN inventory using (film_id)
+JOIN rental using (inventory_id)
+GROUP BY name
+ORDER BY Total_telat DESC;")
+
+#tampilkan data
+data2
+
+
+```
+
+• Visualisai keterlambatan pengembalian kaset berdasarkan genre
+```{r}
+# Hitung rumus Rasio Telat (%)
+data2$Rasio_telat <- (data2$Total_telat / data2$Total_rental) * 100
+
+# Urutkan dari persentase terbesar ke terkecil
+data2_urut <- data2[order(-data2$Rasio_telat), ]
+
+# Potong data, ambil 5 teratas saja
+data2_top5 <- head(data2_urut, 5)
+
+```
+
+```{r}
+donut = ggplot(data2_top5, aes(x = 2, y = Rasio_telat, fill = genre)) +
+  geom_bar(stat = "identity", color = "white", width = 1) +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) + 
+  theme_void() +   
+  labs(title = "Top 5 Genre dengan Rasio Keterlambatan Tertinggi",
+       fill = "Genre Film") +
+  geom_text(aes(label = paste0(round(Rasio_telat, 1), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white", 
+            size = 4)
+
+# Tampilkan grafiknya
+donut
+```
+
+Berdasarkan hasil Analisis Kedua, genre **Sports** memiliki rasio keterlambatan tertinggi sebesar **49,79%** atau **587 transaksi terlambat dari 1.179 penyewaan**. Genre **Sci-Fi** juga menunjukkan rasio keterlambatan tinggi, yaitu **48,05%** atau **529 transaksi terlambat dari 1.101 penyewaan**.
+
+Rasio keterlambatan pada lima genre teratas yang berada di kisaran **46% hingga 49%** menunjukkan bahwa masalah keterlambatan bukan hanya terjadi pada satu genre tertentu, tetapi sudah menjadi persoalan operasional yang cukup umum. Kondisi ini dapat mengganggu ketersediaan stok film dan berpotensi mengurangi peluang pendapatan dari pelanggan lain.
+
+Temuan ini dapat menjadi dasar untuk melihat apakah sistem denda dan aturan pengembalian di Sakila sudah cukup efektif, atau masih terlalu lemah sehingga kurang memberi efek disiplin kepada pelanggan.
+
+
+### Uji Korelasi Tarif Sewa terhadap Durasi Keterlambatan (Scatter Plot)
+• Data uji Korelasi Tarif Sewa terhadap Durasi Keterlambatan
+```{r}
+data3 = dbGetQuery(s3,"SELECT title as judul_film, rental_rate as tarif_sewa, 
+round(AVG(DATEDIFF(return_date, rental_date) - rental_duration),2) as avg_hari_telat
+FROM film
+JOIN inventory using (film_id)
+JOIN rental using (inventory_id)
+WHERE DATEDIFF(return_date, rental_date) > rental_duration
+GROUP BY film_id
+ORDER BY avg_hari_telat DESC;")
+
+#menampilkan  6 data teratas
+head(data3)
+```
+```{r}
+#Uji korelasi
+uji_korelasi <- cor.test(data3$tarif_sewa, data3$avg_hari_telat)
+print(uji_korelasi)
+```
+Berdasarkan hasil uji korelasi Pearson, diperoleh nilai korelasi sebesar **-0.008** dengan **p-value 0.8057**. Nilai korelasi yang mendekati **0** menunjukkan bahwa hubungan antara tarif sewa dan rata-rata hari keterlambatan sangat lemah. Dengan demikian, tarif sewa tidak memengaruhi keterlambatan pengembalian film.
+
+• Visualisasi uji Korelasi Tarif Sewa terhadap Durasi Keterlambatan
+```{r}
+scatter = ggplot(data3, aes(x = tarif_sewa, y = avg_hari_telat)) +
+  geom_jitter(color = "darkblue", alpha = 0.5, width = 0.1) + 
+  geom_smooth(method = "lm", color = "red", se = FALSE) +   
+  
+  scale_x_continuous(
+    breaks = c(0.99, 2.99, 4.99),
+    labels = c("0.99", "2.99", "4.99")
+  ) +
+  theme_minimal() +
+  labs(title = "Hubungan Antara Tarif Sewa dengan Rata-rata Hari Telat",
+       x = "Tarif Sewa / Tarif Denda ($)",
+       y = "Rata-rata Hari Keterlambatan (Hari)")
+
+scatter
+```
+
+Berdasarkan hasil visualisasi scatter plot pada Analisis Ketiga, tarif sewa tidak memiliki hubungan yang jelas dengan rata-rata hari keterlambatan. Hal ini terlihat dari garis tren yang cenderung datar, sehingga film dengan tarif murah, standar, maupun premium memiliki pola keterlambatan yang relatif sama.
+
+Hal ini menunjukkan bahwa tarif sewa atau denda belum cukup kuat untuk membuat pelanggan lebih disiplin dalam mengembalikan film. Dengan demikian, tingginya keterlambatan pada genre **Sports** dan **Sci-Fi** merupakan masalah sistem operasional Sakila secara umum, terutama pada aturan denda yang masih terlalu longgar dan belum memberi efek jera kepada pelanggan.
+
+## Kesimpulan 
+Berdasarkan hasil analisis yang telah dilakukan, genre **Sports** menjadi genre dengan total pendapatan tertinggi dalam database Sakila. Hal ini menunjukkan bahwa Sports memiliki kontribusi besar terhadap pendapatan rental film.
+
+Namun, genre Sports juga memiliki rasio keterlambatan tertinggi, yaitu sebesar **49,79%**. Genre **Sci-Fi** juga menunjukkan rasio keterlambatan yang tinggi, yaitu **48,05%**. Temuan ini menunjukkan bahwa genre dengan tingkat penyewaan dan pendapatan tinggi juga memiliki risiko keterlambatan pengembalian yang besar.
+
+Hasil analisis scatter plot menunjukkan bahwa tarif sewa tidak memiliki hubungan yang kuat dengan rata-rata hari keterlambatan. Artinya, film dengan tarif murah, standar, maupun premium memiliki pola keterlambatan yang relatif sama. Dengan demikian, masalah keterlambatan lebih tepat dipahami sebagai persoalan sistem operasional Sakila, terutama pada aturan denda yang masih terlalu longgar dan belum memberi efek jera kepada pelanggan.
+
+## Rekomendasi 
+Berdasarkan hasil analisis, pengelola rental Sakila perlu melakukan evaluasi terhadap sistem pengembalian dan kebijakan denda yang diterapkan. Tingginya rasio keterlambatan pada beberapa genre menunjukkan bahwa aturan yang ada, belum cukup efektif untuk meningkatkan kedisiplinan pelanggan.
+
+Pengelola dapat memperkuat sistem pengingat pengembalian, seperti notifikasi sebelum jatuh tempo penyewaan. Selain itu, sistem denda juga dapat dievaluasi agar lebih memberikan efek disiplin kepada pelanggan yang terlambat mengembalikan film.
+
+Genre dengan tingkat penyewaan tinggi seperti **Sports** dan **Sci-Fi** juga perlu mendapat perhatian khusus dalam pengelolaan stok film agar keterlambatan pengembalian tidak mengurangi ketersediaan film bagi pelanggan lain dan tidak menimbulkan potensi kehilangan pendapatan.
